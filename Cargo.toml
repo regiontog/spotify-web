@@ -1,0 +1,17 @@
+[package]
+name = "spotify-web"
+version = "0.1.0"
+authors = ["Erlend Tobiassen <erlend.tobiassen@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+attohttpc = {version = "0.11", features = ["json"] }
+url = "2.1"
+smallvec = "1.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+base64 = "0.11"
+derive_builder = "0.9.0"
+serde_with_macros = "1.1.0"
