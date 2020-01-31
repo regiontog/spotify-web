@@ -55,9 +55,7 @@ impl<State> Authorization<'_, State> {
         S: PartialEq<State>,
         Opt: Into<Option<S>>,
     {
-        let state = state.into();
-
-        let equal = match (state, self.state.as_ref()) {
+        let equal = match (state.into(), self.state.as_ref()) {
             (None, None) => true,
             (None, Some(_)) => false,
             (Some(_), None) => false,
@@ -272,5 +270,25 @@ mod test {
             .build();
 
         assert!(auth.fetch_token("code", String::from("982348434")).is_err());
+    }
+
+    #[test]
+    fn token_fetch_diff_states_errors() {
+        let client = Client::new(
+            "5fe01282e44241328a84e7c5cc169165",
+            ";awoeifjigowerg",
+            ScopeList::empty(),
+        );
+
+        let auth = client
+            .authorization()
+            .redirect_uri("hello")
+            .state("982348434")
+            .build();
+
+        assert!(match auth.fetch_token("code", String::from("oijfsklj")) {
+            Err(crate::error::TokenFetchError::SecurityViolation(_)) => true,
+            _ => false,
+        });
     }
 }
