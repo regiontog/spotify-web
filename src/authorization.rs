@@ -1,6 +1,9 @@
 use std::borrow::Cow;
 
+use crate::error::{TokenFetchError, StatesNotEqual};
 use crate::model::Token;
+
+use attohttpc::header::AUTHORIZATION;
 use smallvec::{smallvec, SmallVec};
 use url::Url;
 
@@ -40,14 +43,14 @@ impl<State> Authorization<'_, State> {
         &self,
         code: &str,
         state: impl Into<Option<State>>,
-    ) -> attohttpc::Result<Token>
+    ) -> Result<Token, TokenFetchError>
     where
         State: PartialEq,
     {
         self.fetch_token(code, state)
     }
 
-    pub fn fetch_token<S, Opt>(&self, code: &str, state: Opt) -> attohttpc::Result<Token>
+    pub fn fetch_token<S, Opt>(&self, code: &str, state: Opt) -> Result<Token, TokenFetchError>
     where
         S: PartialEq<State>,
         Opt: Into<Option<S>>,
@@ -62,29 +65,31 @@ impl<State> Authorization<'_, State> {
         };
 
         if equal {
-            attohttpc::post("https://accounts.spotify.com/api/token")
-                .params(&[
-                    ("grant_type", "authorization_code"),
-                    ("code", code),
-                    ("redirect_uri", self.redirect_uri.as_ref()),
-                ])
-                .header("Authorization", self.authorization_header)
+            Ok(attohttpc::post("https://accounts.spotify.com/api/token")
+                .form(&serde_json::json!({
+                    "grant_type": "authorization_code",
+                    "code": code,
+                    "redirect_uri": self.redirect_uri.as_ref(),
+                }))?
+                .header(AUTHORIZATION, self.authorization_header)
                 .send()?
-                .json_utf8()
+                .json_utf8()?)
         } else {
-            unimplemented!()
+            Err(StatesNotEqual.into())
         }
     }
 
-    pub fn refresh_token(&self, token: &Token) -> attohttpc::Result<Token> {
-        attohttpc::post("https://accounts.spotify.com/api/token")
-            .params(&[
-                ("grant_type", "refresh_token"),
-                ("refresh_token", &token.refresh_token),
-            ])
-            .header("Authorization", self.authorization_header)
-            .send()?
-            .json_utf8()
+    pub fn refresh_token(&self, token: &Token) -> Option<attohttpc::Result<Token>> {
+        token.refresh_token.as_ref().map(|refresh_token| {
+            attohttpc::post("https://accounts.spotify.com/api/token")
+                .header(AUTHORIZATION, self.authorization_header)
+                .form(&serde_json::json!({
+                    "grant_type": "refresh_token",
+                    "refresh_token": refresh_token,
+                }))?
+                .send()?
+                .json_utf8()
+        })
     }
 
     pub fn url(&self) -> &Url {

@@ -1,6 +1,7 @@
+use attohttpc::header::{AUTHORIZATION, CONTENT_LENGTH};
 use derive_builder::Builder;
-use serde_with_macros::skip_serializing_none;
 use serde::Serialize;
+use serde_with_macros::skip_serializing_none;
 
 use crate::scope::*;
 use crate::Spotify;
@@ -77,13 +78,14 @@ impl<'a> ResumePlaybackBuilder<'a> {
     }
 }
 
-impl<Scopes> Spotify<'_, Scopes>
+impl<Scopes> Spotify<Scopes>
 where
     Scopes: Scoped<UserModifyPlaybackState>,
 {
     pub fn pause_playback<'a>(&self, device_id: impl Into<Option<&'a str>>) -> Response {
         let mut req = attohttpc::put("https://api.spotify.com/v1/me/player/pause")
-            .header("Authorization", self.access_token);
+            .header(AUTHORIZATION, &self.authorization_header)
+            .header(CONTENT_LENGTH, 0);
 
         if let Some(device_id) = device_id.into() {
             req = req.param("device_id", device_id);
@@ -96,7 +98,7 @@ where
         let params = params.into().unwrap_or_default();
 
         let mut req = attohttpc::put("https://api.spotify.com/v1/me/player/play")
-            .header("Authorization", self.access_token);
+            .header(AUTHORIZATION, &self.authorization_header);
 
         if let Some(device_id) = params.device_id {
             req = req.param("device_id", device_id);
@@ -106,13 +108,13 @@ where
     }
 }
 
-impl<Scopes> Spotify<'_, Scopes>
+impl<Scopes> Spotify<Scopes>
 where
     Scopes: Scoped<UserReadCurrentlyPlaying>,
 {
     pub fn currently_playing<'a>(&self, market: impl Into<Option<&'a str>>) -> Response {
         let mut req = attohttpc::get("https://api.spotify.com/v1/me/player/currently-playing")
-            .header("Authorization", self.access_token);
+            .header(AUTHORIZATION, &self.authorization_header);
 
         if let Some(market) = market.into() {
             req = req.param("market", market);
@@ -122,13 +124,13 @@ where
     }
 }
 
-impl<Scopes> Spotify<'_, Scopes>
+impl<Scopes> Spotify<Scopes>
 where
     Scopes: Scoped<UserReadPlaybackState>,
 {
     pub fn currently_playing_state<'a>(&self, market: impl Into<Option<&'a str>>) -> Response {
         let mut req = attohttpc::get("https://api.spotify.com/v1/me/player/currently-playing")
-            .header("Authorization", self.access_token);
+            .header(AUTHORIZATION, &self.authorization_header);
 
         if let Some(market) = market.into() {
             req = req.param("market", market);

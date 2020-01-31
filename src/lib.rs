@@ -24,8 +24,8 @@ pub struct Client<'a, Scopes> {
     scopes: Scopes,
 }
 
-pub struct Spotify<'a, Scopes> {
-    access_token: &'a str,
+pub struct Spotify<Scopes> {
+    authorization_header: String,
     _scopes: Scopes,
 }
 
@@ -71,9 +71,16 @@ where
         }
 
         if available.values().all(|x| *x) {
+            const BEARER: &'static str = "Bearer ";
+
+            let mut ah = String::with_capacity(BEARER.len() + token.access_token.len());
+
+            ah.push_str(BEARER);
+            ah.push_str(&token.access_token);
+
             Ok(Spotify {
                 _scopes: self.scopes,
-                access_token: &token.access_token,
+                authorization_header: ah,
             })
         } else {
             Err(ScopeMismatchError)
@@ -119,7 +126,7 @@ mod test {
             token_type: String::from("flkejrflwef"),
             scope: Scope::joined_names().unwrap(),
             expires_in: 3,
-            refresh_token: String::from("IJOEWFO"),
+            refresh_token: None,
         };
 
         let client = Client::new(
@@ -143,7 +150,7 @@ mod test {
             token_type: String::from("flkejrflwef"),
             scope: String::from("user-read-email ldfkjwefw eflkjwe ;flwe;qf"),
             expires_in: 3,
-            refresh_token: String::from("IJOEWFO"),
+            refresh_token: None,
         };
 
         let client = Client::new(

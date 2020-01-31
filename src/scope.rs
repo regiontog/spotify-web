@@ -48,6 +48,9 @@ impl<X, H, T> Prepend<X> for Cons<H, T> {
 #[macro_export(local_inner_macros)]
 #[doc(hidden)]
 macro_rules! right_brackets {
+    (; $($acc:tt)*) => {
+        $($acc)*
+    };
     ($f:ident; $($acc:tt)*) => {
         $($acc)* >
     };
@@ -385,6 +388,8 @@ mod test {
         UserReadPlaybackState,
         UserReadPlaybackState
     ] = ScopeList::create();
+
+    const _TEST_EMPTY_SCOPE: scopes![] = ScopeList::create();
 
     #[test]
     fn test() {
